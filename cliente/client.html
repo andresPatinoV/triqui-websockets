@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat con websockets</title>
+</head>
+<body>
+    <h1>TRES EN LINEA</h1>
+
+    <h1 id="error" style="display: none;">ERROR AL CONECTAR AL SERVIDOR</h1>
+
+    <form id="loginForm">
+        <label for="nombre">Ingresa tu nombre:</label>
+        <input type="text" id="nombre" name="nombre" required>
+        <button type="button" onclick="login()">Enviar</button>
+    </form>
+
+    <h2 id="nombreMostrado" style="display: none;"></h2>
+
+    <div id="chat" style="display: none;">
+        <input type="text" id="message">
+    </div>
+
+
+    <script>
+        const socket = new WebSocket("ws://localhost:8300");
+
+        socket.onerror = function(error) {
+            console.error("Error en la conexión:", error);
+            document.getElementById('error').style.display = 'block';
+        };
+
+
+        function login() {
+            const nombre = document.getElementById('nombre').value;
+            let message = "#INSCRIBIR#"+nombre;
+            socket.send(message);
+
+            document.getElementById('nombreMostrado').innerText = `Jugador: ${nombre}`;
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('nombreMostrado').style.display = 'block';
+            document.getElementById('chat').style.display = 'block';
+        }
+
+        socket.onmessage = (event) => {
+            const chat = document.getElementById("chat");
+            const message = document.createElement("p");
+            message.innerText = event.data;
+            chat.appendChild(message);
+        }
+
+        const input = document.getElementById("message");
+        input.addEventListener("keydown", (event) => {
+            if(event.key === "Enter"){
+                const message = "#JUGADA#"+input.value;
+                socket.send(message);
+                input.value;
+            }
+        });
+    </script>
+</body>
+</html>
