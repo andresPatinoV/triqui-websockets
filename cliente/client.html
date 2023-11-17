@@ -4,6 +4,53 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat con websockets</title>
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            flex-direction: column;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+        }
+
+        table {
+            border-collapse: collapse;
+        }
+
+        button {
+            font-size: 40px;
+            width: 80px;
+            height: 80px;
+        }
+
+        #login-button {
+            font-size: 16px;
+            width: 60px;
+            height: 30px;
+        }
+
+        form {
+            margin-bottom: 20px;
+        }
+        
+        #bloqueoPagina {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.03); /* Color de fondo semitransparente */
+            z-index: 9999; /* Coloca el div por encima de otros elementos */
+            display: none; /* Inicialmente oculto */
+        }
+
+        
+    </style>
 </head>
 <body>
     <h1>TRES EN LINEA</h1>
@@ -13,51 +60,92 @@
     <form id="loginForm">
         <label for="nombre">Ingresa tu nombre:</label>
         <input type="text" id="nombre" name="nombre" required>
-        <button type="button" onclick="login()">Enviar</button>
+        <button type="button" onclick="login()" id="login-button">Unirse</button>
     </form>
 
     <h2 id="nombreMostrado" style="display: none;"></h2>
+    <h3 id="estadoPartida" style="display: none;"></h3>
 
-    <div id="chat" style="display: none;">
-        <input type="text" id="message">
-    </div>
+    <div id="bloqueoPagina"></div>
 
-
+    <table style="display: none;" id="tablero">
+        <tr>
+            <td><button onclick="marcarCasilla(this)" id="0-0"></button></td>
+            <td><button onclick="marcarCasilla(this)" id="0-1"></button></td>
+            <td><button onclick="marcarCasilla(this)" id="0-2"></button></td>
+        </tr>
+        <tr>
+            <td><button onclick="marcarCasilla(this)" id="1-0"></button></td>
+            <td><button onclick="marcarCasilla(this)" id="1-1"></button></td>
+            <td><button onclick="marcarCasilla(this)" id="1-2"></button></td>
+        </tr>
+        <tr>
+            <td><button onclick="marcarCasilla(this)" id="2-0"></button></td>
+            <td><button onclick="marcarCasilla(this)" id="2-1"></button></td>
+            <td><button onclick="marcarCasilla(this)" id="2-2"></button></td>
+        </tr>
+    </table>
     <script>
         const socket = new WebSocket("ws://localhost:8300");
+        let jugadorNombre;
 
         socket.onerror = function(error) {
             console.error("Error en la conexión:", error);
             document.getElementById('error').style.display = 'block';
         };
 
-
         function login() {
-            const nombre = document.getElementById('nombre').value;
-            let message = "#INSCRIBIR#"+nombre;
+            jugadorNombre = document.getElementById('nombre').value;
+            let message = "#INSCRIBIR#"+jugadorNombre;
             socket.send(message);
+        }
 
-            document.getElementById('nombreMostrado').innerText = `Jugador: ${nombre}`;
-            document.getElementById('loginForm').style.display = 'none';
-            document.getElementById('nombreMostrado').style.display = 'block';
-            document.getElementById('chat').style.display = 'block';
+        function marcarCasilla(boton) {
+            // Verificar si la casilla ya está marcada
+            if (boton.innerText === '') {
+                boton.innerText = 'X';
+                boton.disabled = true;
+            }
+        }
+
+        function bloquearPagina() {
+            var bloqueoDiv = document.getElementById('bloqueoPagina');
+            bloqueoDiv.style.display = 'block'; // Muestra el div de bloqueo
+        }
+
+        function desbloquearPagina() {
+            var bloqueoDiv = document.getElementById('bloqueoPagina');
+            bloqueoDiv.style.display = 'none'; // Oculta el div de bloqueo
         }
 
         socket.onmessage = (event) => {
-            const chat = document.getElementById("chat");
-            const message = document.createElement("p");
-            message.innerText = event.data;
-            chat.appendChild(message);
+            let mensajeServer = event.data;
+            console.log(mensajeServer);
+
+            if (mensajeServer === '#INSCRIPCION-OK#'){
+                document.getElementById('nombreMostrado').innerText = `Jugador: ${jugadorNombre}`;
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('nombreMostrado').style.display = 'block';
+                document.getElementById('estadoPartida').style.display = 'block';
+                document.getElementById('tablero').style.display = 'block';
+                document.getElementById('estadoPartida').innerText = 'Estado: Esperando Rival';
+                bloquearPagina();
+            }
+            else if (mensajeServer === '#INSCRIPCION-NOK#'){
+                console.log('Error en la inscripcion');
+            }
+            else if (mensajeServer === '#NOK#CAPACIDAD#'){
+                console.log('Se ha superado la cantidad de jugadores');
+            }
+            else if (mensajeServer === '#NOK#NOMBRE-REPETIDO#'){
+                console.log('El nombre ingresado ya se encuentra registrado, intente con otro.');
+            }
+            else if (mensajeServer === '#JUEGO-INICIADO#'){
+                console.log('Juego iniciado');
+                document.getElementById('estadoPartida').innerText = 'Estado: Jugando';
+            }
         }
 
-        const input = document.getElementById("message");
-        input.addEventListener("keydown", (event) => {
-            if(event.key === "Enter"){
-                const message = "#JUGADA#"+input.value;
-                socket.send(message);
-                input.value;
-            }
-        });
     </script>
 </body>
 </html>

@@ -9,82 +9,125 @@ class Cliente:
         self.nombre = nombre
         self.simbolo = simbolo
         self.victorias = 0
+        self.estado = 'bloqueado'
 
 def imprimir_tablero(tablero):
     for fila in tablero:
         print(" ".join(fila))
 
+def validaNombreJugador(nombreCliente, websocket):
+    for ws, cliente in clientes.items():
+        print(cliente.nombre)
+        if websocket != ws:
+            if cliente.nombre == nombreCliente:
+
+                return False 
+    return True
+    
+
+def validarInscripcion(websocket, nombreCliente):
+    if len(clientes) < 2:
+        simbolo = 'X' if len(clientes) == 0 else 'O'
+        cliente = Cliente(nombreCliente, simbolo)
+        return True, cliente
+    else:
+        return False, False
+    
+def verJugadores():
+    listaJugadores = 'clientes: '
+    for cliente in clientes.values():
+        listaJugadores += f'{cliente.nombre} '
+    return listaJugadores
+
+
 async def chat_server(websocket, path):
     try:
         async for mensaje in websocket:
-            print(mensaje)
+            print('-----------------------------------------------------------------')
             try:
                 
                 estado = ''
                 mensajeSplit = mensaje.split('#')
-                if mensajeSplit[1] == 'INSCRIBIR':
-                    if len(clientes) <= 2:
-                        simbolo = 'X' if len(clientes) == 0 else 'O'
-                        clientes[websocket] = Cliente(mensajeSplit[2], simbolo)
-                        estado = 'inscrito'
-                    else:
-                        estado = 'capacidad'
 
-                    print(estado)
-                    print(mensajeSplit[1])
+                if mensajeSplit[1] == 'INSCRIBIR':
+                    capacidad, cliente = validarInscripcion(websocket, mensajeSplit[2])
+                    estado = 'inscrito' if capacidad else 'capacidadSuperada'
+                    estado = 'inscrito' if validaNombreJugador(cliente.nombre, websocket) else 'nombreRepetido'
+                    if estado == 'inscrito':
+                        clientes[websocket] = cliente
                 
                 elif mensajeSplit[1] == 'JUGADA':
                     jugada = mensajeSplit[2].split('-')
                     fila = int(jugada[0])
                     columna = int(jugada[1])
                     estado = 'jugadaOK'
-                    print(estado)
 
-                
                 else:
                     estado = 'error'
-                print(estado)
 
                 for ws, cliente in clientes.items():
                     print(f"{cliente.nombre} {cliente.simbolo} {cliente.victorias}")
                     print(estado)
+
                     if websocket != ws:
+                        print('socket diferente al que envio el mensaje')
+
                         if estado == 'inscrito':
-                            mensaje2Clientes = f"{cliente.nombre} se ha unido a la partida"
-                        elif estado == 'capacidad':
-                            mensaje2Clientes = f"Servidor Lleno, intente mas tarde"
+                            mensaje2Clientes = f"{clientes[websocket].nombre} se ha unido a la partida"
+                            
                         elif estado == 'jugadaOK':
                             mensaje2Clientes = f"{cliente.nombre}: {fila}-{columna}"
-                        else:
-                            mensaje2Clientes = f"ERROR DESCONOCIDO DESDE TU CLIENTE"
 
-                        await websocket.send(mensaje2Clientes)
+                        else:
+                            mensaje2Clientes = f"ERROR DESCONOCIDO DESDE OTRO CLIENTE"
+
+                        await ws.send(mensaje2Clientes)
+
+                        if len(clientes) == 2:
+                                await ws.send(f"#JUEGO-INICIADO#")    
+
                         print('awat1')
+
                     else:
+                        print('Desde este socket se envio el mensaje')
                         if estado == 'inscrito':
-                            mensaje2Cliente = f"Bienvenido: {cliente.nombre}"
-                        elif estado == 'capacidad':
-                            mensaje2Cliente = f""
+                            mensaje2Cliente = f"#INSCRIPCION-OK#"
+                            
+                        elif estado == 'capacidadSuperada':
+                            mensaje2Cliente = f"#NOK#CAPACIDAD#"
+
+                        elif estado == 'nombreRepetido':
+                            mensaje2Cliente = f"#NOK#NOMBRE-REPETIDO#"
+
                         elif estado == 'jugadaOK':
                             tablero[fila][columna] = cliente.simbolo
-                            mensaje2Clientes = f"{cliente.nombre}: {fila}-{columna}"
-                        else:
-                            mensaje2Clientes = f"ERROR DESCONOCIDO DESDE EL RIVAL"
+                            mensaje2Cliente = f"{cliente.nombre}: {fila}-{columna}"
 
-                        await ws.send(mensaje2Cliente)
+                        else:
+                            mensaje2Cliente = f"ERROR DESCONOCIDO DESDE EL RIVAL"
+
+                        await websocket.send(mensaje2Cliente)
+
+                        if len(clientes) == 2:
+                                await websocket.send(f"#JUEGO-INICIADO#")
+
                         print('awat2')
 
                     imprimir_tablero(tablero)
+                    print(f'cantidad jugadores: {len(clientes)}')
+                    print(verJugadores())
 
                 
             except:
                 print('except')
                 for ws, cliente in clientes.items():
+                    
                     if websocket == ws:
-                        mensajeError = f"ERROR: El mensaje no tiene un formato reconocido!"
+                        mensajeError = f"EXCEPT: ERROR DESCONOCIDO DESDE TU CLIENTE"
                         await ws.send(mensajeError)
+
                     else:
-                        mensajeError = f"ERROR: El mensaje de tu rival no tiene un formato reconocido!"
+                        mensajeError = f"EXCEPT: ERROR DESCONOCIDO DESDE OTRO CLIENTE"
                         await ws.send(mensajeError)
             
     finally:
