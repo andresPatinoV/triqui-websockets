@@ -88,6 +88,7 @@
     <script>
         const socket = new WebSocket("ws://localhost:8300");
         let jugadorNombre;
+        let simbolo;
 
         socket.onerror = function(error) {
             console.error("Error en la conexión:", error);
@@ -103,7 +104,7 @@
         function marcarCasilla(boton) {
             // Verificar si la casilla ya está marcada
             if (boton.innerText === '') {
-                boton.innerText = 'X';
+                boton.innerText = simbolo;
                 boton.disabled = true;
             }
         }
@@ -122,8 +123,10 @@
             let mensajeServer = event.data;
             console.log(mensajeServer);
 
-            if (mensajeServer === '#INSCRIPCION-OK#'){
-                document.getElementById('nombreMostrado').innerText = `Jugador: ${jugadorNombre}`;
+            mensajeDividido = mensajeServer.split('#')
+            console.log(mensajeDividido)
+            if (mensajeDividido[1] == 'INSCRIPCION-OK'){
+                document.getElementById('nombreMostrado').innerText = 'Jugador: '+jugadorNombre;
                 document.getElementById('loginForm').style.display = 'none';
                 document.getElementById('nombreMostrado').style.display = 'block';
                 document.getElementById('estadoPartida').style.display = 'block';
@@ -131,18 +134,21 @@
                 document.getElementById('estadoPartida').innerText = 'Estado: Esperando Rival';
                 bloquearPagina();
             }
-            else if (mensajeServer === '#INSCRIPCION-NOK#'){
+            else if (mensajeDividido[1] == 'INSCRIPCION-NOK'){
                 console.log('Error en la inscripcion');
             }
-            else if (mensajeServer === '#NOK#CAPACIDAD#'){
+            else if (mensajeDividido[1] == 'NOK-CAPACIDAD'){
                 console.log('Se ha superado la cantidad de jugadores');
             }
-            else if (mensajeServer === '#NOK#NOMBRE-REPETIDO#'){
+            else if (mensajeDividido[1] === 'NOK-NOMBRE-REPETIDO'){
                 console.log('El nombre ingresado ya se encuentra registrado, intente con otro.');
             }
-            else if (mensajeServer === '#JUEGO-INICIADO#'){
+            else if (mensajeDividido[1] == 'JUEGO-INICIADO'){
                 console.log('Juego iniciado');
+                console.log('simbolo: '+mensajeDividido[2]);
+                simbolo = mensajeDividido[2];
                 document.getElementById('estadoPartida').innerText = 'Estado: Jugando';
+                desbloquearPagina();
             }
         }
 

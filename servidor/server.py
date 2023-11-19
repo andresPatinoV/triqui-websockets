@@ -55,6 +55,8 @@ async def chat_server(websocket, path):
                     estado = 'inscrito' if validaNombreJugador(cliente.nombre, websocket) else 'nombreRepetido'
                     if estado == 'inscrito':
                         clientes[websocket] = cliente
+                    elif estado == 'nombreRepetido':
+                        await websocket.send(f"#NOK#NOMBRE-REPETIDO#")
                 
                 elif mensajeSplit[1] == 'JUGADA':
                     jugada = mensajeSplit[2].split('-')
@@ -84,9 +86,7 @@ async def chat_server(websocket, path):
                         await ws.send(mensaje2Clientes)
 
                         if len(clientes) == 2:
-                                await ws.send(f"#JUEGO-INICIADO#")    
-
-                        print('awat1')
+                                await ws.send(f"#JUEGO-INICIADO#{cliente.simbolo}#")    
 
                     else:
                         print('Desde este socket se envio el mensaje')
@@ -94,10 +94,10 @@ async def chat_server(websocket, path):
                             mensaje2Cliente = f"#INSCRIPCION-OK#"
                             
                         elif estado == 'capacidadSuperada':
-                            mensaje2Cliente = f"#NOK#CAPACIDAD#"
+                            mensaje2Cliente = f"#NOK-CAPACIDAD#"
 
                         elif estado == 'nombreRepetido':
-                            mensaje2Cliente = f"#NOK#NOMBRE-REPETIDO#"
+                            mensaje2Cliente = f"#NOK-NOMBRE-REPETIDO#"
 
                         elif estado == 'jugadaOK':
                             tablero[fila][columna] = cliente.simbolo
@@ -109,9 +109,7 @@ async def chat_server(websocket, path):
                         await websocket.send(mensaje2Cliente)
 
                         if len(clientes) == 2:
-                                await websocket.send(f"#JUEGO-INICIADO#")
-
-                        print('awat2')
+                                await websocket.send(f"#JUEGO-INICIADO#{cliente.simbolo}#")
 
                     imprimir_tablero(tablero)
                     print(f'cantidad jugadores: {len(clientes)}')
