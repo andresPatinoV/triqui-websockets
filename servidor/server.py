@@ -16,7 +16,7 @@ def imprimir_tablero():
         print(" ".join(fila))
 
 def estadoTablero():
-    contenido_tablero = ''.join('-'.join(fila) for fila in tablero)
+    contenido_tablero = '-'.join('-'.join(fila) for fila in tablero)
     return contenido_tablero
 
 
@@ -75,6 +75,7 @@ async def chat_server(websocket, path):
                 for ws, cliente in clientes.items():
                     print(f"{cliente.nombre} {cliente.simbolo} {cliente.victorias}")
                     print(estado)
+                    await ws.send(f"#ESTADO-TABLERO#{estadoTablero()}")
 
                     if websocket != ws:
                         print('socket diferente al que envio el mensaje')
@@ -91,7 +92,7 @@ async def chat_server(websocket, path):
                         await ws.send(mensaje2Clientes)
 
                         if len(clientes) == 2 and not partidaIniciada:
-                            await ws.send(f"#JUEGO-INICIADO#O#")    
+                            await ws.send(f"#JUEGO-INICIADO#O#")   
 
                     else:
                         print('Desde este socket se envio el mensaje')
@@ -116,7 +117,10 @@ async def chat_server(websocket, path):
                         if len(clientes) == 2 and not partidaIniciada:
                             await websocket.send(f"#JUEGO-INICIADO#O#")
                             partidaIniciada = True
+                        
 
+
+                    print(estadoTablero())
                     imprimir_tablero()
                     print(f'cantidad jugadores: {len(clientes)}')
                     print(verJugadores())

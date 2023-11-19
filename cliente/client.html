@@ -91,7 +91,7 @@
         let simbolo;
         let simboloRival;
         let estadoPartida = document.getElementById('estadoPartida');
-
+        let casillas = document.querySelectorAll('#tablero button');
 
         socket.onerror = function(error) {
             console.error("Error en la conexión:", error);
@@ -106,10 +106,11 @@
 
         function marcarCasilla(casilla) {
             // Verificar si la casilla ya está marcada
-            if (casilla.innerText === '') {
+            if (casilla.innerText === '.') {
                 casilla.innerText = simbolo;
                 casilla.disabled = true;
                 let mensaje2server = "#JUGADA#"+casilla.id;
+                console.log(mensaje2server);
                 socket.send(mensaje2server);
             }
         }
@@ -121,13 +122,28 @@
         }
 
         function bloquearPagina() {
-            var bloqueoDiv = document.getElementById('bloqueoPagina');
+            let bloqueoDiv = document.getElementById('bloqueoPagina');
             bloqueoDiv.style.display = 'block'; // Muestra el div de bloqueo
         }
 
         function desbloquearPagina() {
-            var bloqueoDiv = document.getElementById('bloqueoPagina');
+            let bloqueoDiv = document.getElementById('bloqueoPagina');
             bloqueoDiv.style.display = 'none'; // Oculta el div de bloqueo
+        }
+
+        function validarTablero(estadoTablero){
+            listaTablero = estadoTablero.split('-');
+            let i = 0;
+            casillas.forEach(function(casilla) {
+                if (listaTablero[i] === 'X' || listaTablero[i] === 'O' ){
+                    casilla.innerText = listaTablero[i];
+                    casilla.disabled = true;
+                }
+                else {
+                    casilla.innerText = '.';
+                }
+                i++;
+            })
         }
 
         socket.onmessage = (event) => {
@@ -170,6 +186,10 @@
                 marcarCasillaRival(mensajeDividido[2]);
                 desbloquearPagina();
                 estadoPartida.innerText = 'Estado: Tu Turno';
+            }
+            else if (mensajeDividido[1] === 'ESTADO-TABLERO'){
+                console.log(mensajeDividido[2]);
+                validarTablero(mensajeDividido[2]);
             }
         }
 
