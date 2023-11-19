@@ -89,6 +89,9 @@
         const socket = new WebSocket("ws://localhost:8300");
         let jugadorNombre;
         let simbolo;
+        let simboloRival;
+        let estadoPartida = document.getElementById('estadoPartida');
+
 
         socket.onerror = function(error) {
             console.error("Error en la conexión:", error);
@@ -97,16 +100,24 @@
 
         function login() {
             jugadorNombre = document.getElementById('nombre').value;
-            let message = "#INSCRIBIR#"+jugadorNombre;
-            socket.send(message);
+            let mensaje2server = "#INSCRIBIR#"+jugadorNombre;
+            socket.send(mensaje2server);
         }
 
-        function marcarCasilla(boton) {
+        function marcarCasilla(casilla) {
             // Verificar si la casilla ya está marcada
-            if (boton.innerText === '') {
-                boton.innerText = simbolo;
-                boton.disabled = true;
+            if (casilla.innerText === '') {
+                casilla.innerText = simbolo;
+                casilla.disabled = true;
+                let mensaje2server = "#JUGADA#"+casilla.id;
+                socket.send(mensaje2server);
             }
+        }
+
+        function marcarCasillaRival(jugada){
+            casilla = document.getElementById(jugada);
+            casilla.innerText = simboloRival;
+            casilla.disabled = true;
         }
 
         function bloquearPagina() {
@@ -132,23 +143,33 @@
                 document.getElementById('estadoPartida').style.display = 'block';
                 document.getElementById('tablero').style.display = 'block';
                 document.getElementById('estadoPartida').innerText = 'Estado: Esperando Rival';
+                simbolo = mensajeDividido[2];
+                simbolo == 'X' ? simboloRival = 'O' : simboloRival = 'X';
                 bloquearPagina();
             }
-            else if (mensajeDividido[1] == 'INSCRIPCION-NOK'){
+            else if (mensajeDividido[1] === 'INSCRIPCION-NOK'){
                 console.log('Error en la inscripcion');
             }
-            else if (mensajeDividido[1] == 'NOK-CAPACIDAD'){
+            else if (mensajeDividido[1] === 'NOK-CAPACIDAD'){
                 console.log('Se ha superado la cantidad de jugadores');
             }
             else if (mensajeDividido[1] === 'NOK-NOMBRE-REPETIDO'){
                 console.log('El nombre ingresado ya se encuentra registrado, intente con otro.');
             }
-            else if (mensajeDividido[1] == 'JUEGO-INICIADO'){
+            else if (mensajeDividido[1] === 'JUEGO-INICIADO'){
                 console.log('Juego iniciado');
-                console.log('simbolo: '+mensajeDividido[2]);
-                simbolo = mensajeDividido[2];
-                document.getElementById('estadoPartida').innerText = 'Estado: Jugando';
+                console.log('simbolo que inicia: '+mensajeDividido[2]);
+                document.getElementById('estadoPartida').innerText = 'Estado: Juego Iniciado';
+                simbolo == 'O' ? desbloquearPagina() : bloquearPagina();
+            }
+            else if (mensajeDividido[1] === 'JUGADA-OK'){
+                bloquearPagina();
+                estadoPartida.innerText = 'Estado: Turno Rival';
+            }
+            else if (mensajeDividido[1] === 'JUGADARIVAL-OK'){
+                marcarCasillaRival(mensajeDividido[2]);
                 desbloquearPagina();
+                estadoPartida.innerText = 'Estado: Tu Turno';
             }
         }
 

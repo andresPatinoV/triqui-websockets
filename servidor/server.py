@@ -11,9 +11,14 @@ class Cliente:
         self.victorias = 0
         self.estado = 'bloqueado'
 
-def imprimir_tablero(tablero):
+def imprimir_tablero():
     for fila in tablero:
         print(" ".join(fila))
+
+def estadoTablero():
+    contenido_tablero = ''.join('-'.join(fila) for fila in tablero)
+    return contenido_tablero
+
 
 def validaNombreJugador(nombreCliente, websocket):
     for ws, cliente in clientes.items():
@@ -23,7 +28,6 @@ def validaNombreJugador(nombreCliente, websocket):
 
                 return False 
     return True
-    
 
 def validarInscripcion(websocket, nombreCliente):
     if len(clientes) < 2:
@@ -39,13 +43,13 @@ def verJugadores():
         listaJugadores += f'{cliente.nombre} '
     return listaJugadores
 
-
 async def chat_server(websocket, path):
     try:
         async for mensaje in websocket:
             print('-----------------------------------------------------------------')
+            
             try:
-                
+                print(mensaje)
                 estado = ''
                 mensajeSplit = mensaje.split('#')
 
@@ -55,8 +59,9 @@ async def chat_server(websocket, path):
                     estado = 'inscrito' if validaNombreJugador(cliente.nombre, websocket) else 'nombreRepetido'
                     if estado == 'inscrito':
                         clientes[websocket] = cliente
+                        partidaIniciada = False
                     elif estado == 'nombreRepetido':
-                        await websocket.send(f"#NOK#NOMBRE-REPETIDO#")
+                        await websocket.send(f"#NOK-NOMBRE-REPETIDO#")
                 
                 elif mensajeSplit[1] == 'JUGADA':
                     jugada = mensajeSplit[2].split('-')
@@ -78,20 +83,20 @@ async def chat_server(websocket, path):
                             mensaje2Clientes = f"{clientes[websocket].nombre} se ha unido a la partida"
                             
                         elif estado == 'jugadaOK':
-                            mensaje2Clientes = f"{cliente.nombre}: {fila}-{columna}"
+                            mensaje2Clientes = f"#JUGADARIVAL-OK#{fila}-{columna}#"
 
                         else:
                             mensaje2Clientes = f"ERROR DESCONOCIDO DESDE OTRO CLIENTE"
 
                         await ws.send(mensaje2Clientes)
 
-                        if len(clientes) == 2:
-                                await ws.send(f"#JUEGO-INICIADO#{cliente.simbolo}#")    
+                        if len(clientes) == 2 and not partidaIniciada:
+                            await ws.send(f"#JUEGO-INICIADO#O#")    
 
                     else:
                         print('Desde este socket se envio el mensaje')
                         if estado == 'inscrito':
-                            mensaje2Cliente = f"#INSCRIPCION-OK#"
+                            mensaje2Cliente = f"#INSCRIPCION-OK#{cliente.simbolo}"
                             
                         elif estado == 'capacidadSuperada':
                             mensaje2Cliente = f"#NOK-CAPACIDAD#"
@@ -101,17 +106,18 @@ async def chat_server(websocket, path):
 
                         elif estado == 'jugadaOK':
                             tablero[fila][columna] = cliente.simbolo
-                            mensaje2Cliente = f"{cliente.nombre}: {fila}-{columna}"
+                            mensaje2Cliente = f"#JUGADA-OK#"
 
                         else:
                             mensaje2Cliente = f"ERROR DESCONOCIDO DESDE EL RIVAL"
 
                         await websocket.send(mensaje2Cliente)
 
-                        if len(clientes) == 2:
-                                await websocket.send(f"#JUEGO-INICIADO#{cliente.simbolo}#")
+                        if len(clientes) == 2 and not partidaIniciada:
+                            await websocket.send(f"#JUEGO-INICIADO#O#")
+                            partidaIniciada = True
 
-                    imprimir_tablero(tablero)
+                    imprimir_tablero()
                     print(f'cantidad jugadores: {len(clientes)}')
                     print(verJugadores())
 
