@@ -146,6 +146,14 @@
             })
         }
 
+        function reiniciarTablero(){
+            let i = 0;
+            casillas.forEach(function(casilla) {
+                casilla.disabled = false;
+                casilla.innerText = '.';
+            })
+        }
+
         socket.onmessage = (event) => {
             let mensajeServer = event.data;
             console.log(mensajeServer);
@@ -190,6 +198,13 @@
             else if (mensajeDividido[1] === 'ESTADO-TABLERO'){
                 console.log(mensajeDividido[2]);
                 validarTablero(mensajeDividido[2]);
+                if (mensajeDividido[2] === '.-.-.-.-.-.-.-.-.'){
+                    reiniciarTablero();
+                }
+            }
+            else if (mensajeDividido[1] === 'REINICIAR-TABLERO'){
+                console.log(mensajeDividido[2]);
+                
             }
         }
 
