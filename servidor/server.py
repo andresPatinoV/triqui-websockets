@@ -4,7 +4,6 @@ import websockets
 clientes = {}
 tablero = [['.' for _ in range(3)] for _ in range(3)]
 simbolosDisponibles = ['X', 'O']
-jugadasPartida = []
 
 class Cliente:
     def __init__(self, nombre, simbolo):
@@ -23,10 +22,8 @@ def estadoTablero():
 
 def validaNombreJugador(nombreCliente, websocket):
     for ws, cliente in clientes.items():
-        print(cliente.nombre)
         if websocket != ws:
             if cliente.nombre == nombreCliente:
-
                 return False 
     return True
 
@@ -46,15 +43,12 @@ def verJugadores():
 
 def reiniciarTablero():
     global tablero
-    print(tablero)
     i=0
     for fila in tablero:
         if fila.count('.') == 0:
             i+=1
-    print(i)
     if i>2:
         tablero = [['.' for _ in range(3)] for _ in range(3)]
-        print('reiniciando')
         return True
     return False
     
@@ -115,7 +109,6 @@ async def chat_server(websocket, path):
                     estado = 'jugadaOK' if validarJugada(fila, columna) else 'jugadaNOK'
                     if estado == 'jugadaOK':
                         tablero[fila][columna] = clientes[websocket].simbolo
-                        jugadasPartida.append(clientes[websocket].simbolo)
                         ganador = verificarGanador()
                         if ganador:
                             clientes[websocket].victorias += 1
@@ -129,11 +122,8 @@ async def chat_server(websocket, path):
                 reinicio =  reiniciarTablero()
 
                 for ws, cliente in clientes.items():
-                    print(f"{cliente.nombre} {cliente.simbolo} {cliente.victorias}")
-                    print(estado)
 
                     if websocket != ws:
-                        print('socket diferente al que envio el mensaje')
 
                         if estado == 'inscrito':
                             mensaje2Clientes = f"{clientes[websocket].nombre} se ha unido a la partida"
@@ -155,7 +145,6 @@ async def chat_server(websocket, path):
 
                        
                     else:
-                        print('Desde este socket se envio el mensaje')
                         if estado == 'inscrito':
                             cliente.simbolo = simbolosDisponibles.pop()
                             mensaje2Cliente = f"#INSCRIPCION-OK#{cliente.simbolo}"
@@ -167,7 +156,6 @@ async def chat_server(websocket, path):
                             mensaje2Cliente = f"#NOK-NOMBRE-REPETIDO#"
 
                         elif estado == 'jugadaOK':
-                            
                             mensaje2Cliente = f"#JUGADA-OK#"
 
                         else:
@@ -183,25 +171,15 @@ async def chat_server(websocket, path):
                             await websocket.send(f"#GANADOR#{clientes[websocket].nombre}#")
                             await websocket.send(f"#PUNTUACION#{marcador}")
 
-                        
-
                     if reinicio:
                             await ws.send(f"#EMPATE#")
 
                     print(estadoTablero())
-                    imprimir_tablero()
                     print(f'cantidad jugadores: {len(clientes)}')
                     print(verJugadores())
-                    print(f"simbolos disponibles: {simbolosDisponibles}")
-                    print(f"Jugadas partida actual: {jugadasPartida}")
-                    
 
                     await ws.send(f"#ESTADO-TABLERO#{estadoTablero()}")
-
-
-                        
-
-                
+             
             except:
                 print('except')
                 for ws, cliente in clientes.items():
@@ -218,7 +196,6 @@ async def chat_server(websocket, path):
         cliente = clientes[websocket]
         simbolosDisponibles.append(cliente.simbolo)
         del clientes[websocket]
-
 
 if __name__ == "__main__":
     start_server = websockets.serve(chat_server, "localhost", 8300)

@@ -113,7 +113,6 @@
                 casilla.innerText = simbolo;
                 casilla.disabled = true;
                 let mensaje2server = "#JUGADA#"+casilla.id;
-                console.log(mensaje2server);
                 socket.send(mensaje2server);
             }
         }
@@ -159,10 +158,8 @@
 
         socket.onmessage = (event) => {
             let mensajeServer = event.data;
-            console.log(mensajeServer);
 
             mensajeDividido = mensajeServer.split('#')
-            console.log(mensajeDividido)
             if (mensajeDividido[1] == 'INSCRIPCION-OK'){
                 document.getElementById('loginForm').style.display = 'none';
                 document.getElementById('nombreMostrado').innerText = 'Jugador: '+jugadorNombre;
@@ -187,8 +184,6 @@
                 console.log('El nombre ingresado ya se encuentra registrado, intente con otro.');
             }
             else if (mensajeDividido[1] === 'JUEGO-INICIADO'){
-                console.log('Juego iniciado');
-                console.log('simbolo que inicia: '+mensajeDividido[2]);
                 document.getElementById('estadoPartida').innerText = 'Estado: Juego Iniciado';
                 simbolo == 'O' ? desbloquearPagina() : bloquearPagina();
             }
@@ -202,7 +197,6 @@
                 estadoPartida.innerText = 'Estado: Tu Turno';
             }
             else if (mensajeDividido[1] === 'ESTADO-TABLERO'){
-                console.log(mensajeDividido[2]);
                 validarTablero(mensajeDividido[2]);
                 if (mensajeDividido[2] === '.-.-.-.-.-.-.-.-.'){
                     reiniciarTablero();
