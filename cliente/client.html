@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat con websockets</title>
+    <title>Triqui</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body {
             display: flex;
@@ -53,7 +54,7 @@
     </style>
 </head>
 <body>
-    <h1>TRES EN LINEA</h1>
+    <h1>TRIQUI</h1>
 
     <h1 id="error" style="display: none;">ERROR AL CONECTAR AL SERVIDOR</h1>
 
@@ -64,6 +65,7 @@
     </form>
 
     <h2 id="nombreMostrado" style="display: none;"></h2>
+    <h2 id="puntuacion" style="display: none;"></h2>
     <h3 id="estadoPartida" style="display: none;"></h3>
 
     <div id="bloqueoPagina"></div>
@@ -92,6 +94,7 @@
         let simboloRival;
         let estadoPartida = document.getElementById('estadoPartida');
         let casillas = document.querySelectorAll('#tablero button');
+        let puntuacion = document.getElementById('puntuacion');
 
         socket.onerror = function(error) {
             console.error("Error en la conexión:", error);
@@ -161,12 +164,15 @@
             mensajeDividido = mensajeServer.split('#')
             console.log(mensajeDividido)
             if (mensajeDividido[1] == 'INSCRIPCION-OK'){
-                document.getElementById('nombreMostrado').innerText = 'Jugador: '+jugadorNombre;
                 document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('nombreMostrado').innerText = 'Jugador: '+jugadorNombre;
                 document.getElementById('nombreMostrado').style.display = 'block';
                 document.getElementById('estadoPartida').style.display = 'block';
-                document.getElementById('tablero').style.display = 'block';
                 document.getElementById('estadoPartida').innerText = 'Estado: Esperando Rival';
+                document.getElementById('puntuacion').style.display = 'block';
+                document.getElementById('puntuacion').innerText = 'Puntuacion:';
+                document.getElementById('tablero').style.display = 'block';
+                
                 simbolo = mensajeDividido[2];
                 simbolo == 'X' ? simboloRival = 'O' : simboloRival = 'X';
                 bloquearPagina();
@@ -202,9 +208,42 @@
                     reiniciarTablero();
                 }
             }
-            else if (mensajeDividido[1] === 'REINICIAR-TABLERO'){
-                console.log(mensajeDividido[2]);
+            else if (mensajeDividido[1] === 'PUNTUACION'){
+                puntuacion.innerText = 'Puntuacion: '+mensajeDividido[2]+' - '+mensajeDividido[3];
+            }
+            else if (mensajeDividido[1] === 'GANADOR'){
                 
+                if(mensajeDividido[2] === jugadorNombre){
+                    Swal.fire({
+                        icon: "success",
+                        title: "GANASTE!",
+                        text: "Reiniciando Tablero...",
+                        showConfirmButton: false,
+                        timer: 2000,
+                        timerProgressBar: true,
+                    });
+                }
+                else{
+                    Swal.fire({
+                        icon: "error",
+                        title: "PERDISTE!",
+                        text: "Reiniciando Tablero...",
+                        showConfirmButton: false,
+                        timer: 2000,
+                        timerProgressBar: true,
+                    });
+                }
+                
+            }
+            else if (mensajeDividido[1] === 'EMPATE'){
+                Swal.fire({
+                        icon: "question",
+                        title: "EMPATE!",
+                        text: "Reiniciando Tablero...",
+                        showConfirmButton: false,
+                        timer: 2000,
+                        timerProgressBar: true,
+                    });
             }
         }
 

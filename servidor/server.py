@@ -55,6 +55,8 @@ def reiniciarTablero():
     if i>2:
         tablero = [['.' for _ in range(3)] for _ in range(3)]
         print('reiniciando')
+        return True
+    return False
     
 def validarJugada(fila, columna):
     global tablero
@@ -93,6 +95,7 @@ async def chat_server(websocket, path):
                 print(mensaje)
                 estado = ''
                 ganador = False
+                reinicio = False
                 mensajeSplit = mensaje.split('#')
 
                 if mensajeSplit[1] == 'INSCRIBIR':
@@ -122,6 +125,8 @@ async def chat_server(websocket, path):
 
                 else:
                     estado = 'error'
+
+                reinicio =  reiniciarTablero()
 
                 for ws, cliente in clientes.items():
                     print(f"{cliente.nombre} {cliente.simbolo} {cliente.victorias}")
@@ -178,7 +183,10 @@ async def chat_server(websocket, path):
                             await websocket.send(f"#GANADOR#{clientes[websocket].nombre}#")
                             await websocket.send(f"#PUNTUACION#{marcador}")
 
-                    reiniciarTablero()
+                        
+
+                    if reinicio:
+                            await ws.send(f"#EMPATE#")
 
                     print(estadoTablero())
                     imprimir_tablero()
