@@ -54,9 +54,36 @@ def reiniciarTablero():
     print(i)
     if i>2:
         tablero = [['.' for _ in range(3)] for _ in range(3)]
+        print('reiniciando')
+    
+def validarJugada(fila, columna):
+    global tablero
+    if tablero[fila][columna] == '.':
         return True
     else:
         return False
+
+def verificarGanador():
+    global tablero
+    for fila in tablero:
+        if fila.count(fila[0]) == len(fila) and fila[0] != '.':
+            tablero = [['.' for _ in range(3)] for _ in range(3)]
+            return True
+    
+    for col in range(len(tablero)):
+        columna = [tablero[fila][col] for fila in range(len(tablero))]
+        if columna.count(columna[0]) == len(columna) and columna[0] != '.':
+            tablero = [['.' for _ in range(3)] for _ in range(3)]
+            return True
+        
+    if tablero[0][0] == tablero[1][1] == tablero[2][2] != '.':
+        tablero = [['.' for _ in range(3)] for _ in range(3)]
+        return True
+    if tablero[0][2] == tablero[1][1] == tablero[2][0] != '.':
+        tablero = [['.' for _ in range(3)] for _ in range(3)]
+        return True
+    
+    return False
 
 async def chat_server(websocket, path):
     try:
@@ -65,6 +92,7 @@ async def chat_server(websocket, path):
             try:
                 print(mensaje)
                 estado = ''
+                ganador = False
                 mensajeSplit = mensaje.split('#')
 
                 if mensajeSplit[1] == 'INSCRIBIR':
@@ -81,7 +109,16 @@ async def chat_server(websocket, path):
                     jugada = mensajeSplit[2].split('-')
                     fila = int(jugada[0])
                     columna = int(jugada[1])
-                    estado = 'jugadaOK'
+                    estado = 'jugadaOK' if validarJugada(fila, columna) else 'jugadaNOK'
+                    if estado == 'jugadaOK':
+                        tablero[fila][columna] = clientes[websocket].simbolo
+                        jugadasPartida.append(clientes[websocket].simbolo)
+                        ganador = verificarGanador()
+                        if ganador:
+                            clientes[websocket].victorias += 1
+                            marcador = ''
+                            for cliente in clientes.values():
+                                marcador += f"{cliente.nombre}:{cliente.victorias}#"
 
                 else:
                     estado = 'error'
@@ -107,6 +144,10 @@ async def chat_server(websocket, path):
                         if len(clientes) == 2 and not partidaIniciada:
                             await ws.send(f"#JUEGO-INICIADO#O#")
 
+                        if ganador:
+                            await ws.send(f"#GANADOR#{clientes[websocket].nombre}#")
+                            await ws.send(f"#PUNTUACION#{marcador}")
+
                        
                     else:
                         print('Desde este socket se envio el mensaje')
@@ -121,10 +162,8 @@ async def chat_server(websocket, path):
                             mensaje2Cliente = f"#NOK-NOMBRE-REPETIDO#"
 
                         elif estado == 'jugadaOK':
-                            tablero[fila][columna] = cliente.simbolo
-                            jugadasPartida.append(cliente.simbolo)
-                            mensaje2Cliente = f"#JUGADA-OK#"
                             
+                            mensaje2Cliente = f"#JUGADA-OK#"
 
                         else:
                             mensaje2Cliente = f"ERROR DESCONOCIDO DESDE EL RIVAL"
@@ -135,7 +174,11 @@ async def chat_server(websocket, path):
                             await websocket.send(f"#JUEGO-INICIADO#O#")
                             partidaIniciada = True
 
-                    reiniciar= reiniciarTablero()
+                        if ganador:
+                            await websocket.send(f"#GANADOR#{clientes[websocket].nombre}#")
+                            await websocket.send(f"#PUNTUACION#{marcador}")
+
+                    reiniciarTablero()
 
                     print(estadoTablero())
                     imprimir_tablero()
@@ -146,6 +189,7 @@ async def chat_server(websocket, path):
                     
 
                     await ws.send(f"#ESTADO-TABLERO#{estadoTablero()}")
+
 
                         
 
